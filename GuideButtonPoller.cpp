@@ -8,6 +8,45 @@
 #include <windows.h>
 #include <iostream>
 
+//Clear Screen function I found in an article on cplusplus.com.  I considered
+//using NCurses but decided that was overkill
+void ClearScreen()
+{
+	HANDLE                     hStdOut;
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	DWORD                      count;
+	DWORD                      cellCount;
+	COORD                      homeCoords = { 0, 0 };
+
+	hStdOut = GetStdHandle( STD_OUTPUT_HANDLE );
+	if (hStdOut == INVALID_HANDLE_VALUE) return;
+
+	/* Get the number of cells in the current buffer */
+	if (!GetConsoleScreenBufferInfo( hStdOut, &csbi )) return;
+	cellCount = csbi.dwSize.X *csbi.dwSize.Y;
+
+	/* Fill the entire buffer with spaces */
+	if (!FillConsoleOutputCharacter(
+			hStdOut,
+			(TCHAR) ' ',
+			cellCount,
+			homeCoords,
+			&count
+	)) return;
+
+	/* Fill the entire buffer with the current colors and attributes */
+	if (!FillConsoleOutputAttribute(
+			hStdOut,
+			csbi.wAttributes,
+			cellCount,
+			homeCoords,
+			&count
+	)) return;
+
+	/* Move the cursor home */
+	SetConsoleCursorPosition( hStdOut, homeCoords );
+}
+
 int main(int argc, _TCHAR* argv[])
 {
 	struct ControllerStruct
@@ -45,9 +84,12 @@ int main(int argc, _TCHAR* argv[])
 	ControllerStruct buttons;
 	while(1) //Infinite polling loop
 	{
+
 		getControllerData(0, buttons);  //call the function with the controller number(zero based) and
 						//the pointer to the ControllerStruct.
+		ClearScreen();  //clear the screen
 		std::cout << buttons.guideButton;  //simply access the variable like normal.  Easy peasy.
+		Sleep(50);  //pause briefly so as not to spam the console
 	}
 	//in a real program you should release the dll by calling FreeLibrary(hGetProcIDDLL) to prevent memory
 	//leaks, but since there's no way of cleanly exiting this program, I'm not sure where to put it
